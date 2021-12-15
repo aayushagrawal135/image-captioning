@@ -42,13 +42,13 @@ def save_image(img, saved_count, title=None, epoch = None):
     if epoch is not None:
         plt.savefig(f"../data/{epoch}_{saved_count}.png")  # pause a bit so that plots are updated
     else:
-        plt.savefig(f"../data/{saved_count}.png")  # pause a bit so that plots are updated
+        plt.savefig(f"../data/results/{saved_count}.png")  # pause a bit so that plots are updated
     plt.pause(0.001)
     
     print(f"saved_count: {saved_count}")
 
 #Show attention
-def plot_attention(img, result, attention_plot):
+def plot_attention(img, result, attention_plot, epoch, saved_count):
     #untransform
     img[0] = img[0] * 0.229
     img[1] = img[1] * 0.224 
@@ -70,7 +70,14 @@ def plot_attention(img, result, attention_plot):
         ax.set_title(result[l])
         img = ax.imshow(temp_image)
         ax.imshow(temp_att, cmap='gray', alpha=0.7, extent=img.get_extent())
-        
-
     plt.tight_layout()
     plt.show()
+    plt.savefig(f"../data/attention/{epoch}_{saved_count}.png")
+
+def plot_loss(loss_values, model_name = None):
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.plot(loss_values)
+    plt.show()
+    model_name = "" if None else model_name
+    plt.savefig(f"../data/loss/loss_graph_{model_name}.png")

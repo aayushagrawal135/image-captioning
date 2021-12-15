@@ -42,16 +42,13 @@ class DecoderRNN(nn.Module):
         alphas = torch.zeros(batch_size, seq_length,num_features).to(self.device)
                 
         for s in range(seq_length):
-            alpha,context = self.attention(features, h)
+            alpha, context = self.attention(features, h)
             lstm_input = torch.cat((embeds[:, s], context), dim=1)
             h, c = self.lstm_cell(lstm_input, (h, c))
-                    
             output = self.fcn(self.drop(h))
-            
             preds[:,s] = output
             alphas[:,s] = alpha  
-        
-        
+
         return preds, alphas
     
     def generate_caption(self,features,max_len=20,vocab=None):
@@ -67,35 +64,30 @@ class DecoderRNN(nn.Module):
         word = torch.tensor(vocab.stoi['<SOS>']).view(1,-1).to(self.device)
         embeds = self.embedding(word)
 
-        
         captions = []
         
         for i in range(max_len):
             alpha,context = self.attention(features, h)
-            
-            
             #store the apla score
             alphas.append(alpha.cpu().detach().numpy())
-            
             lstm_input = torch.cat((embeds[:, 0], context), dim=1)
             h, c = self.lstm_cell(lstm_input, (h, c))
             output = self.fcn(self.drop(h))
             output = output.view(batch_size,-1)
-        
-            
+
             #select the word with most val
             predicted_word_idx = output.argmax(dim=1)
-            
+
             #save the generated word
             captions.append(predicted_word_idx.item())
-            
+
             #end if <EOS detected>
             if vocab.itos[predicted_word_idx.item()] == "<EOS>":
                 break
-            
+
             #send generated word as the next caption
             embeds = self.embedding(predicted_word_idx.unsqueeze(0))
-        
+
         #covert the vocab idx to words and return sentence
         return [vocab.itos[idx] for idx in captions],alphas
     
