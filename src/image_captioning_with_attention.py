@@ -1,71 +1,19 @@
 # %%
-data_location =  "../input/flickr8k"
-
 #imports
 import numpy as np
 import torch
-from torch.utils.data import DataLoader,Dataset
 import torchvision.transforms as T
-
-#custom imports 
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import torchvision.models as models
 from data_loader import FlickrDataset, get_data_loader
-
-#show the tensor image
-import matplotlib.pyplot as plt
-def show_image(img, title=None, epoch = None):
-    """Imshow for Tensor."""
-    #unnormalize 
-    img[0] = img[0] * 0.229
-    img[1] = img[1] * 0.224 
-    img[2] = img[2] * 0.225 
-    img[0] += 0.485 
-    img[1] += 0.456 
-    img[2] += 0.406
-    
-    img = img.numpy().transpose((1, 2, 0))
-    
-    plt.imshow(img)
-    if title is not None:
-        if epoch is not None:
-            plt.title(f"Epoch: {epoch} : Caption: {title}")
-        else:
-            plt.title(title)
-    plt.pause(0.001)  # pause a bit so that plots are updated
-
-# saved_count = 0
-
-def save_image(img, saved_count, title=None, epoch = None):
-    """Imshow for Tensor."""
-    #unnormalize 
-    img[0] = img[0] * 0.229
-    img[1] = img[1] * 0.224 
-    img[2] = img[2] * 0.225 
-    img[0] += 0.485 
-    img[1] += 0.456 
-    img[2] += 0.406
-    
-    img = img.numpy().transpose((1, 2, 0))
-    
-    if title is not None:
-        if epoch is not None:
-            plt.title(f"Epoch: {epoch} : Caption: {title}")
-        else:
-            plt.title(title)
-    plt.imshow(img)
-    if epoch is not None:
-        plt.savefig(f"../data/{epoch}_{saved_count}.png")  # pause a bit so that plots are updated
-    else:
-        plt.savefig(f"../data/{saved_count}.png")  # pause a bit so that plots are updated
-    plt.pause(0.001)
-    
-    print(f"saved_count: {saved_count}")
-
+from plots_and_save import *
 
 # Initiate the Dataset and Dataloader
 # setting the constants
 data_location =  "../input/flickr8k"
 BATCH_SIZE = 256
-# BATCH_SIZE = 6
 NUM_WORKER = 0
 
 #defining the transform to be applied
@@ -101,18 +49,6 @@ device
 # ### 3) Defining the Model Architecture
 # 
 # Model is seq2seq model. In the **encoder** pretrained ResNet model is used to extract the features. Decoder, is the implementation of the Bahdanau Attention Decoder. In the decoder model **LSTM cell**.
-
-import torch
-import numpy as np
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-
-import torchvision.models as models
-from torch.utils.data import DataLoader,Dataset
-import torchvision.transforms as T
-
-# [code] {"execution":{"iopub.status.busy":"2021-12-12T20:06:31.935972Z","iopub.execute_input":"2021-12-12T20:06:31.936436Z","iopub.status.idle":"2021-12-12T20:06:31.955673Z","shell.execute_reply.started":"2021-12-12T20:06:31.936394Z","shell.execute_reply":"2021-12-12T20:06:31.954074Z"}}
 class EncoderCNN(nn.Module):
     def __init__(self):
         super(EncoderCNN, self).__init__()
@@ -130,39 +66,28 @@ class EncoderCNN(nn.Module):
         features = features.view(features.size(0), -1, features.size(-1)) #(batch_size,49,2048)
         return features
 
-
 #Bahdanau Attention
 class Attention(nn.Module):
     def __init__(self, encoder_dim,decoder_dim,attention_dim):
         super(Attention, self).__init__()
-        
         self.attention_dim = attention_dim
-        
         self.W = nn.Linear(decoder_dim,attention_dim)
         self.U = nn.Linear(encoder_dim,attention_dim)
-        
         self.A = nn.Linear(attention_dim,1)
-        
-        
-        
-        
+
     def forward(self, features, hidden_state):
         u_hs = self.U(features)     #(batch_size,num_layers,attention_dim)
         w_ah = self.W(hidden_state) #(batch_size,attention_dim)
         
         combined_states = torch.tanh(u_hs + w_ah.unsqueeze(1)) #(batch_size,num_layers,attemtion_dim)
-        
         attention_scores = self.A(combined_states)         #(batch_size,num_layers,1)
         attention_scores = attention_scores.squeeze(2)     #(batch_size,num_layers)
         
-        
         alpha = F.softmax(attention_scores,dim=1)          #(batch_size,num_layers)
-        
         attention_weights = features * alpha.unsqueeze(2)  #(batch_size,num_layers,features_dim)
         attention_weights = attention_weights.sum(dim=1)   #(batch_size,num_layers)
-        
         return alpha,attention_weights
-        
+
 
 #Attention Decoder
 class DecoderRNN(nn.Module):
@@ -173,21 +98,17 @@ class DecoderRNN(nn.Module):
         self.vocab_size = vocab_size
         self.attention_dim = attention_dim
         self.decoder_dim = decoder_dim
-        
+
         self.embedding = nn.Embedding(vocab_size,embed_size)
         self.attention = Attention(encoder_dim,decoder_dim,attention_dim)
-        
-        
+
         self.init_h = nn.Linear(encoder_dim, decoder_dim)  
         self.init_c = nn.Linear(encoder_dim, decoder_dim)  
         self.lstm_cell = nn.LSTMCell(embed_size+encoder_dim,decoder_dim,bias=True)
         self.f_beta = nn.Linear(decoder_dim, encoder_dim)
-        
-        
+
         self.fcn = nn.Linear(decoder_dim,vocab_size)
         self.drop = nn.Dropout(drop_prob)
-        
-        
     
     def forward(self, features, captions):
         
@@ -389,34 +310,6 @@ def get_caps_from(features_tensors):
         # show_image(features_tensors[0],title=caption)
     
     return caps,alphas
-
-#Show attention
-def plot_attention(img, result, attention_plot):
-    #untransform
-    img[0] = img[0] * 0.229
-    img[1] = img[1] * 0.224 
-    img[2] = img[2] * 0.225 
-    img[0] += 0.485 
-    img[1] += 0.456 
-    img[2] += 0.406
-    
-    img = img.numpy().transpose((1, 2, 0))
-    temp_image = img
-
-    fig = plt.figure(figsize=(15, 15))
-
-    len_result = len(result)
-    for l in range(len_result):
-        temp_att = attention_plot[l].reshape(7,7)
-        
-        ax = fig.add_subplot(len_result//2,len_result//2, l+1)
-        ax.set_title(result[l])
-        img = ax.imshow(temp_image)
-        ax.imshow(temp_att, cmap='gray', alpha=0.7, extent=img.get_extent())
-        
-
-    plt.tight_layout()
-    plt.show()
 
 for _ in range(4):
     dataiter = iter(data_loader)
