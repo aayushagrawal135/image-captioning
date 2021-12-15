@@ -37,7 +37,6 @@ def show_image(img, title=None, epoch = None):
 def save_image(img, saved_count, title=None, epoch = None):
     """Imshow for Tensor."""
     #unnormalize 
-    print ("Inside save")
     img[0] = img[0] * 0.229
     img[1] = img[1] * 0.224 
     img[2] = img[2] * 0.225 
@@ -47,18 +46,16 @@ def save_image(img, saved_count, title=None, epoch = None):
     
     img = img.numpy().transpose((1, 2, 0))
     
-    # plt.imshow(img)
     if title is not None:
         if epoch is not None:
             plt.title(f"Epoch: {epoch} : Caption: {title}")
         else:
             plt.title(title)
     plt.imshow(img)
-    # saved_count = saved_count + 1
-    #fig1 = plt.gcf()
-    # plt.show()
-    #plt.draw()
-    plt.savefig(f"./data/{saved_count}.png")  # pause a bit so that plots are updated
+    if epoch is not None:
+        plt.savefig(f"../data/{epoch}_{saved_count}.png")  # pause a bit so that plots are updated
+    else:
+        plt.savefig(f"../data/{saved_count}.png")  # pause a bit so that plots are updated
     plt.pause(0.001)
     
     print(f"saved_count: {saved_count}")
@@ -105,7 +102,6 @@ device
 # 
 # Model is seq2seq model. In the **encoder** pretrained ResNet model is used to extract the features. Decoder, is the implementation of the Bahdanau Attention Decoder. In the decoder model **LSTM cell**.
 
-# {"execution":{"iopub.status.busy":"2021-12-12T20:06:28.802369Z","iopub.execute_input":"2021-12-12T20:06:28.802754Z","iopub.status.idle":"2021-12-12T20:06:28.808743Z","shell.execute_reply.started":"2021-12-12T20:06:28.802722Z","shell.execute_reply":"2021-12-12T20:06:28.807651Z"}}
 import torch
 import numpy as np
 import torch.nn as nn
@@ -135,7 +131,6 @@ class EncoderCNN(nn.Module):
         return features
 
 
-# {"execution":{"iopub.status.busy":"2021-12-12T20:06:37.400548Z","iopub.execute_input":"2021-12-12T20:06:37.400905Z","iopub.status.idle":"2021-12-12T20:06:37.412058Z","shell.execute_reply.started":"2021-12-12T20:06:37.400869Z","shell.execute_reply":"2021-12-12T20:06:37.410740Z"}}
 #Bahdanau Attention
 class Attention(nn.Module):
     def __init__(self, encoder_dim,decoder_dim,attention_dim):
@@ -169,7 +164,6 @@ class Attention(nn.Module):
         return alpha,attention_weights
         
 
-# {"execution":{"iopub.status.busy":"2021-12-12T20:06:40.673027Z","iopub.execute_input":"2021-12-12T20:06:40.673400Z","iopub.status.idle":"2021-12-12T20:06:40.702930Z","shell.execute_reply.started":"2021-12-12T20:06:40.673364Z","shell.execute_reply":"2021-12-12T20:06:40.701544Z"}}
 #Attention Decoder
 class DecoderRNN(nn.Module):
     def __init__(self,embed_size, vocab_size, attention_dim,encoder_dim,decoder_dim,drop_prob=0.3):
@@ -277,7 +271,6 @@ class DecoderRNN(nn.Module):
         return h, c
 
 
-# {"execution":{"iopub.status.busy":"2021-12-12T20:06:45.934504Z","iopub.execute_input":"2021-12-12T20:06:45.934862Z","iopub.status.idle":"2021-12-12T20:06:45.943341Z","shell.execute_reply.started":"2021-12-12T20:06:45.934828Z","shell.execute_reply":"2021-12-12T20:06:45.942313Z"}}
 class EncoderDecoder(nn.Module):
     def __init__(self,embed_size, vocab_size, attention_dim,encoder_dim,decoder_dim,drop_prob=0.3):
         super().__init__()
@@ -297,7 +290,6 @@ class EncoderDecoder(nn.Module):
 
 # ### 4) Setting Hypperparameter and Init the model
 
-# {"execution":{"iopub.status.busy":"2021-12-12T20:06:51.063930Z","iopub.execute_input":"2021-12-12T20:06:51.064308Z","iopub.status.idle":"2021-12-12T20:06:51.069446Z","shell.execute_reply.started":"2021-12-12T20:06:51.064273Z","shell.execute_reply":"2021-12-12T20:06:51.068418Z"}}
 #Hyperparams
 embed_size=300
 vocab_size = len(dataset.vocab)
@@ -307,7 +299,6 @@ decoder_dim=512
 learning_rate = 3e-4
 
 
-# {"execution":{"iopub.status.busy":"2021-12-12T20:06:53.667839Z","iopub.execute_input":"2021-12-12T20:06:53.668599Z","iopub.status.idle":"2021-12-12T20:07:00.999886Z","shell.execute_reply.started":"2021-12-12T20:06:53.668553Z","shell.execute_reply":"2021-12-12T20:07:00.999115Z"}}
 #init model
 model = EncoderDecoder(
     embed_size=300,
@@ -320,7 +311,6 @@ model = EncoderDecoder(
 criterion = nn.CrossEntropyLoss(ignore_index=dataset.vocab.stoi["<PAD>"])
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-# {"execution":{"iopub.status.busy":"2021-12-12T20:09:05.474058Z","iopub.execute_input":"2021-12-12T20:09:05.474490Z","iopub.status.idle":"2021-12-12T20:09:05.480741Z","shell.execute_reply.started":"2021-12-12T20:09:05.474452Z","shell.execute_reply":"2021-12-12T20:09:05.479666Z"}}
 #helper function to save the model
 def save_model(model,num_epochs):
     model_state = {
@@ -337,8 +327,8 @@ def save_model(model,num_epochs):
 
 # %%
 # Training Job from above configs
-num_epochs = 25
-print_every = 10
+num_epochs = 1
+print_every = 1
 
 def train(epoch):
     saved_count = 0
@@ -381,53 +371,13 @@ def train(epoch):
 for epoch in range(1, num_epochs+1):
     train(epoch)
 
-
-# for epoch in range(1,num_epochs+1):   
-#     for idx, (image, captions) in enumerate(data_loader):
-#         image,captions = image.to(device),captions.to(device)
-
-#         # Zero the gradients.
-#         optimizer.zero_grad()
-
-#         # Feed forward
-#         outputs,attentions = model(image, captions)
-
-#         # Calculate the batch loss.
-#         targets = captions[:,1:]
-#         loss = criterion(outputs.view(-1, vocab_size), targets.reshape(-1))
-        
-#         # Backward pass.
-#         loss.backward()
-
-#         # Update the parameters in the optimizer.
-#         optimizer.step()
-
-#         if (idx+1)%print_every == 0:
-#             print("Epoch: {} loss: {:.5f}".format(epoch,loss.item()))
-            
-            
-#             #generate the caption
-#             model.eval()
-#             with torch.no_grad():
-#                 dataiter = iter(data_loader)
-#                 img,_ = next(dataiter)
-#                 features = model.encoder(img[0:1].to(device))
-#                 caps,alphas = model.decoder.generate_caption(features,vocab=dataset.vocab)
-#                 caption = ' '.join(caps)
-#                 save_image(img[0], title=caption, epoch = epoch)
-                
-#             model.train()
-        
-#     #save the latest model
-#     save_model(model,epoch)
-
 # %%
 # ## 6 Visualizing the attentions
 # Defining helper functions
 # <li>Given the image generate captions and attention scores</li>
 # <li>Plot the attention scores in the image
 
-# %% [code] {"execution":{"iopub.status.busy":"2021-12-12T19:33:48.041026Z","iopub.status.idle":"2021-12-12T19:33:48.041822Z"}}
+# %%
 #generate caption
 def get_caps_from(features_tensors):
     #generate the caption
@@ -468,46 +418,12 @@ def plot_attention(img, result, attention_plot):
     plt.tight_layout()
     plt.show()
 
-# %% [code] {"execution":{"iopub.status.busy":"2021-12-12T19:33:48.043103Z","iopub.status.idle":"2021-12-12T19:33:48.043934Z"}}
-#show any 1
-dataiter = iter(data_loader)
-images,_ = next(dataiter)
+for _ in range(4):
+    dataiter = iter(data_loader)
+    images,_ = next(dataiter)
 
-img = images[0].detach().clone()
-img1 = images[0].detach().clone()
-caps,alphas = get_caps_from(img.unsqueeze(0))
+    img = images[0].detach().clone()
+    img1 = images[0].detach().clone()
+    caps,alphas = get_caps_from(img.unsqueeze(0))
 
-plot_attention(img1, caps, alphas)
-
-# %% [code] {"execution":{"iopub.status.busy":"2021-12-12T19:33:48.045188Z","iopub.status.idle":"2021-12-12T19:33:48.046044Z"}}
-#show any 1
-dataiter = iter(data_loader)
-images,_ = next(dataiter)
-
-img = images[0].detach().clone()
-img1 = images[0].detach().clone()
-caps,alphas = get_caps_from(img.unsqueeze(0))
-
-plot_attention(img1, caps, alphas)
-
-# %% [code] {"execution":{"iopub.status.busy":"2021-12-12T19:33:48.047313Z","iopub.status.idle":"2021-12-12T19:33:48.048192Z"}}
-#show any 1
-dataiter = iter(data_loader)
-images,_ = next(dataiter)
-
-img = images[0].detach().clone()
-img1 = images[0].detach().clone()
-caps,alphas = get_caps_from(img.unsqueeze(0))
-
-plot_attention(img1, caps, alphas)
-
-# %% [code] {"execution":{"iopub.status.busy":"2021-12-12T19:33:48.0494Z","iopub.status.idle":"2021-12-12T19:33:48.050268Z"}}
-#show any 1
-dataiter = iter(data_loader)
-images,_ = next(dataiter)
-
-img = images[0].detach().clone()
-img1 = images[0].detach().clone()
-caps,alphas = get_caps_from(img.unsqueeze(0))
-
-plot_attention(img1, caps, alphas)
+    plot_attention(img1, caps, alphas)

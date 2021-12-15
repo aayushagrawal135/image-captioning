@@ -12,8 +12,8 @@ data_location =  "../input/flickr8k"
 import pandas as pd
 caption_file = data_location + '/captions.txt'
 df = pd.read_csv(caption_file)
-print("There are {} image to captions".format(len(df)))
-df.head(7)
+# print("There are {} image to captions".format(len(df)))
+# df.head(7)
 
 # %% [code] {"execution":{"iopub.status.busy":"2021-12-12T18:55:34.154774Z","iopub.execute_input":"2021-12-12T18:55:34.155105Z","iopub.status.idle":"2021-12-12T18:55:34.463009Z","shell.execute_reply.started":"2021-12-12T18:55:34.155073Z","shell.execute_reply":"2021-12-12T18:55:34.460605Z"}}
 import matplotlib.pyplot as plt
@@ -26,14 +26,14 @@ data_idx = 11
 
 #eg path to be plot: ../input/flickr8k/Images/1000268201_693b08cb0e.jpg
 image_path = data_location+"/Images/"+df.iloc[data_idx,0]
-img=mpimg.imread(image_path)
-plt.imshow(img)
-plt.show()
+# img=mpimg.imread(image_path)
+# plt.imshow(img)
+# plt.show()
 
 #image consits of 5 captions,
 #showing all 5 captions of the image of the given idx 
-for i in range(data_idx,data_idx+5):
-    print("Caption:",df.iloc[i,1])
+# for i in range(data_idx,data_idx+5):
+#     print("Caption:",df.iloc[i,1])
 
 
 # %% [markdown]
