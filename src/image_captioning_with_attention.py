@@ -86,12 +86,16 @@ def train(epoch):
             with torch.no_grad():
                 dataiter = iter(data_loader)
                 img, _ = next(dataiter)
-                features = model.encoder(img[0:1].to(device))
+                # features = model.encoder(img[0:1].to(device))
+                features = model.encode(img[0:1].to(device))
                 caps, alphas = model.decoder.generate_caption(features,vocab=dataset.vocab)
+                
+                # model.forward()
+                
                 caption = ' '.join(caps)
                 save_image(img[0], saved_count, title=caption, epoch = epoch)
                 caps, alphas = get_caps_from(img[0].unsqueeze(0), model, dataset.vocab)
-                plot_attention(img[0], caps, alphas)
+                plot_attention(img[0], caps, alphas, epoch, saved_count)
             saved_count = saved_count + 1
             loss_values.append(loss.item())
     model.save(model, epoch)
@@ -103,14 +107,3 @@ for epoch in range(1, num_epochs+1):
     loss_values.append(loss)
     print(f"Loss list: {loss_values}")
 plot_loss(loss_values)
-
-# %%
-for _ in range(4):
-    dataiter = iter(data_loader)
-    images,_ = next(dataiter)
-
-    img = images[0].detach().clone()
-    img1 = images[0].detach().clone()
-    caps,alphas = get_caps_from(img.unsqueeze(0))
-
-    plot_attention(img1, caps, alphas)
