@@ -50,60 +50,65 @@ learning_rate = 3e-4
 num_epochs = 1
 print_every = 1
 
-model = get_model(len(dataset.vocab), model_name="resnet50")
-criterion = nn.CrossEntropyLoss(ignore_index=dataset.vocab.stoi["<PAD>"])
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+def wrapper(model_name):
 
-# %%
-def train(epoch):
-    saved_count = 0
-    model.train()
+    model = get_model(len(dataset.vocab), model_name=model_name)
+    criterion = nn.CrossEntropyLoss(ignore_index=dataset.vocab.stoi["<PAD>"])
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
+    def train(epoch):
+        saved_count = 0
+        model.train()
+        loss_values = list()
+        for idx, (image, captions) in enumerate(data_loader):
+            image,captions = image.to(device),captions.to(device)
+
+            # Zero the gradients.
+            optimizer.zero_grad()
+
+            # Feed forward
+            outputs, attentions = model(image, captions)
+
+            # Calculate the batch loss.
+            targets = captions[:,1:]
+            loss = criterion(outputs.view(-1, vocab_size), targets.reshape(-1))
+            
+            # Backward pass.
+            loss.backward()
+
+            # Update the parameters in the optimizer.
+            optimizer.step()
+
+            if (idx+1)%print_every == 0:
+                print("Epoch: {} loss: {:.5f}".format(epoch,loss.item()))
+
+                #generate the caption
+                # model.eval()
+                with torch.no_grad():
+                    dataiter = iter(data_loader)
+                    img, _ = next(dataiter)
+                    # features = model.encoder(img[0:1].to(device))
+                    features = model.encode(img[0:1].to(device))
+                    caps, alphas = model.decoder.generate_caption(features,vocab=dataset.vocab)
+                    
+                    # model.forward()
+                    
+                    caption = ' '.join(caps)
+                    save_image(img[0], saved_count, title=caption, epoch = epoch)
+                    caps, alphas = get_caps_from(img[0].unsqueeze(0), model, dataset.vocab)
+                    plot_attention(img[0], caps, alphas, epoch, saved_count)
+                saved_count = saved_count + 1
+                loss_values.append(loss.item())
+        model.save(model, epoch)
+        return np.asarray(loss_values).mean()
+
     loss_values = list()
-    for idx, (image, captions) in enumerate(data_loader):
-        image,captions = image.to(device),captions.to(device)
+    for epoch in range(1, num_epochs+1):
+        loss = train(epoch)
+        loss_values.append(loss)
+        print(f"Loss list: {loss_values}")
+    plot_loss(loss_values, model_name=model_name)
 
-        # Zero the gradients.
-        optimizer.zero_grad()
-
-        # Feed forward
-        outputs, attentions = model(image, captions)
-
-        # Calculate the batch loss.
-        targets = captions[:,1:]
-        loss = criterion(outputs.view(-1, vocab_size), targets.reshape(-1))
-        
-        # Backward pass.
-        loss.backward()
-
-        # Update the parameters in the optimizer.
-        optimizer.step()
-
-        if (idx+1)%print_every == 0:
-            print("Epoch: {} loss: {:.5f}".format(epoch,loss.item()))
-
-            #generate the caption
-            # model.eval()
-            with torch.no_grad():
-                dataiter = iter(data_loader)
-                img, _ = next(dataiter)
-                # features = model.encoder(img[0:1].to(device))
-                features = model.encode(img[0:1].to(device))
-                caps, alphas = model.decoder.generate_caption(features,vocab=dataset.vocab)
-                
-                # model.forward()
-                
-                caption = ' '.join(caps)
-                save_image(img[0], saved_count, title=caption, epoch = epoch)
-                caps, alphas = get_caps_from(img[0].unsqueeze(0), model, dataset.vocab)
-                plot_attention(img[0], caps, alphas, epoch, saved_count)
-            saved_count = saved_count + 1
-            loss_values.append(loss.item())
-    model.save(model, epoch)
-    return np.asarray(loss_values).mean()
-
-loss_values = list()
-for epoch in range(1, num_epochs+1):
-    loss = train(epoch)
-    loss_values.append(loss)
-    print(f"Loss list: {loss_values}")
-plot_loss(loss_values)
+model_names = ["resnet50", "vgg16"]
+for model_name in model_names:
+    wrapper(model_name)
