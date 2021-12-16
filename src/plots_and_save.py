@@ -21,7 +21,7 @@ def show_image(img, title=None, epoch = None):
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-def save_image(img, saved_count, title=None, epoch = None):
+def save_image(img, saved_count, model_name, title=None, epoch = None):
     """Imshow for Tensor."""
     #unnormalize 
     img[0] = img[0] * 0.229
@@ -34,20 +34,20 @@ def save_image(img, saved_count, title=None, epoch = None):
     img = img.numpy().transpose((1, 2, 0))
     if title is not None:
         if epoch is not None:
-            plt.title(f"Epoch: {epoch} : Caption: {title}")
+            plt.title(f"{title}")
         else:
             plt.title(title)
     plt.imshow(img)
     if epoch is not None:
-        plt.savefig(f"../data/results/{epoch}_{saved_count}.png")  # pause a bit so that plots are updated
+        plt.savefig(f"./data/{model_name}/results/{epoch}_{saved_count}.png")  # pause a bit so that plots are updated
     else:
-        plt.savefig(f"../data/results/{saved_count}.png")  # pause a bit so that plots are updated
-    plt.pause(0.001)
+        plt.savefig(f"./data/{model_name}/results/{saved_count}.png")  # pause a bit so that plots are updated
+    plt.pause(0.01)
     
     print(f"saved_count: {saved_count}")
 
 #Show attention
-def plot_attention(img, result, attention_plot, epoch, saved_count):
+def plot_attention(img, result, attention_plot, epoch, saved_count, model_name):
     #untransform
     try:
         img[0] = img[0] * 0.229
@@ -68,7 +68,8 @@ def plot_attention(img, result, attention_plot, epoch, saved_count):
             img = ax.imshow(temp_image)
             ax.imshow(temp_att, cmap='gray', alpha=0.7, extent=img.get_extent())
         plt.tight_layout()
-        plt.savefig(f"../data/attention/{epoch}_{saved_count}.png")
+        plt.savefig(f"./data/{model_name}/attention/{epoch}_{saved_count}.png")
+        plt.pause(0.01)
         plt.show()
     except:
         pass     
@@ -79,4 +80,4 @@ def plot_loss(loss_values, model_name = None):
     plt.plot(loss_values)
     plt.show()
     model_name = "" if None else model_name
-    plt.savefig(f"../data/loss/loss_graph_{model_name}.png")
+    plt.savefig(f"./data/loss/loss_graph_{model_name}.png")

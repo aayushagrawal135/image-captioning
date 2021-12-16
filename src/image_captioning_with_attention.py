@@ -47,8 +47,8 @@ attention_dim=256
 encoder_dim=2048
 decoder_dim=512
 learning_rate = 3e-4
-num_epochs = 1
-print_every = 1
+num_epochs = 60
+print_every = 30
 
 def wrapper(model_name):
 
@@ -94,9 +94,9 @@ def wrapper(model_name):
                     # model.forward()
                     
                     caption = ' '.join(caps)
-                    save_image(img[0], saved_count, title=caption, epoch = epoch)
+                    save_image(img[0], saved_count, model_name, title=caption, epoch = epoch)
                     caps, alphas = get_caps_from(img[0].unsqueeze(0), model, dataset.vocab)
-                    plot_attention(img[0], caps, alphas, epoch, saved_count)
+                    plot_attention(img[0], caps, alphas, epoch, saved_count, model_name)
                 saved_count = saved_count + 1
                 loss_values.append(loss.item())
         model.save(model, epoch)

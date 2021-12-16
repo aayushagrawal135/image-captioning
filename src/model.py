@@ -32,16 +32,16 @@ class EncoderDecoder(nn.Module):
 
         if self.resize_encoding is None:
             in_feat = features.size()[-1]
-            self.resize_encoding = nn.Linear(in_feat, self.encoder_dim)
+            self.resize_encoding = nn.Linear(in_feat, self.encoder_dim).to(device)
             
             for param in self.resize_encoding.parameters():
                 param.requires_grad_(False)
         
-        features = self.resize_encoding(features)
+        features = self.resize_encoding(features).to(device)
         return features
 
     def forward(self, images, captions):
-        features = self.encode(images)
+        features = self.encode(images).to(device)
         outputs = self.decoder(features, captions)
         return outputs
 
@@ -55,7 +55,7 @@ class EncoderDecoder(nn.Module):
             'decoder_dim':self.decoder_dim,
             'state_dict':model.state_dict()
         }
-        torch.save(model_state,'../models/encoder_{self.model_name}.pth')
+        torch.save(model_state,f"./data/models/encoder_{self.model_name}.pth")
 
 def get_model(vocab_size, model_name = "resnet50"):
     return EncoderDecoder(
