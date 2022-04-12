@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from decoder import DecoderRNN
-from encoder import EncoderCNN
+from decoder import Decoder
+from encoder import Encoder
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -16,8 +16,8 @@ class EncoderDecoder(nn.Module):
         self.decoder_dim = decoder_dim
         self.model_name = model_name
 
-        self.encoder = EncoderCNN(model_name, encoder_dim)
-        self.decoder = DecoderRNN(
+        self.encoder = Encoder(model_name, encoder_dim)
+        self.decoder = Decoder(
             embed_size=embed_size,
             vocab_size = vocab_size,
             attention_dim=attention_dim,
