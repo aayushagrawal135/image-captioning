@@ -62,66 +62,6 @@ class Decoder(nn.Module):
 
         return predictions, encoded_captions, decode_lengths, alphas, indices
 
-    def _forward(self, encoder_out, encoded_captions, caption_lens):
-
-        # get the seq length to iterate
-        seq_length = len(encoded_captions[0]) - 1  # Exclude the last one
-        batch_size = encoded_captions.size(0)
-        num_features = encoder_out.size(1)
-
-        preds = torch.zeros(batch_size, seq_length, self.vocab_size).to(self.device)
-        alphas = torch.zeros(batch_size, seq_length, num_features).to(self.device)
-
-        for s in range(seq_length):
-            alpha, context = self.attention(encoder_out, h)
-            lstm_input = torch.cat((embeds[:, s], context), dim=1)
-            h, c = self.lstm_cell(lstm_input, (h, c))
-            output = self.fcn(self.drop(h))
-            preds[:, s] = output
-            alphas[:, s] = alpha
-
-        return preds, alphas
-
-    def generate_caption(self, features, max_len=20, vocab=None):
-        # Inference part
-        # Given the image features generate the captions
-
-        batch_size = features.size(0)
-        h, c = self.init_hidden_state(features)  # (batch_size, decoder_dim)
-
-        alphas = []
-
-        # starting input
-        word = torch.tensor(vocab.stoi['<SOS>']).view(1, -1).to(self.device)
-        embeds = self.embedding(word)
-
-        captions = []
-
-        for i in range(max_len):
-            alpha, context = self.attention(features, h)
-            # store the apla score
-            alphas.append(alpha.cpu().detach().numpy())
-            lstm_input = torch.cat((embeds[:, 0], context), dim=1)
-            h, c = self.lstm_cell(lstm_input, (h, c))
-            output = self.fcn(self.drop(h))
-            output = output.view(batch_size, -1)
-
-            # select the word with most val
-            predicted_word_idx = output.argmax(dim=1)
-
-            # save the generated word
-            captions.append(predicted_word_idx.item())
-
-            # end if <EOS detected>
-            if vocab.itos[predicted_word_idx.item()] == "<EOS>":
-                break
-
-            # send generated word as the next caption
-            embeds = self.embedding(predicted_word_idx.unsqueeze(0))
-
-        # covert the vocab idx to words and return sentence
-        return [vocab.itos[idx] for idx in captions], alphas
-
     # encoder_out: (batch_size, 14*14, 512)
     def init_hidden_state(self, encoder_out):
         mean_encoder_out = encoder_out.mean(dim=1)  # (batch_size, 512)
